@@ -4,14 +4,11 @@ Created on Mon Aug 29 15:34:28 2022
 
 @author: bbill
 """
-
-
 from tensorflow.keras.models import Model,load_model
 from tensorflow.keras import Input
 from tensorflow.keras.layers import Dense,LeakyReLU,BatchNormalization
 from tensorflow.keras.utils import plot_model
 import xgboost as xgb
-
 import time
 import joblib
 import pandas as pd
@@ -31,7 +28,6 @@ X = train_X_s.fit_transform(X)
 def ss(a):
     X = train_X_s.fit_transform(a)
     return X
-
 train_y_s = StandardScaler()
 yy = pd.DataFrame(yy)
 yy = train_y_s.fit_transform(yy)
@@ -55,15 +51,13 @@ model.compile(optimizer='adam', loss='mse')
 history = model.fit(train_X, train_X, epochs=10, batch_size=16, verbose=1, validation_data=(test_X, test_X))
 encoder = Model(inputs=visible,outputs=bottleneck)
 encoder.compile(optimizer='adam',loss='mse')
-encoder.save('DeleteOrA_1')  #儲存模型
-encoder = load_model('AE_A3_Y') #讀取模型
+encoder.save('DeleteOrA_1')  
+encoder = load_model('AE_A3_Y') 
 AEtr_p = encoder.predict(X)
-
 tStart_m = time.time()
 xgb_grid = xgb.XGBRegressor(objective = 'reg:squarederror',colsample_bytree=1, eta=0.3, gamma= 0.1, 
                             max_depth= 6,n_estimators= 1000,subsample= 0.8)
-
-'''Muti-Tasks with XGBoost'''
+'''XGBoost with GridSearch in Muti-Tasks'''
 regress_model = xgb_grid
 pipeline = Pipeline([('reg', MultiOutputRegressor(regress_model))])
 cv_params = {'reg__estimator__n_estimators':[500]
@@ -81,7 +75,7 @@ def rmse_sco(predict, actual):   #評估gridsearchcv的分數
     mean_square_distance = square_distance.mean()
     score = np.sqrt(mean_square_distance)
     return score
-r_rmse = make_scorer(rmse_sco,greater_is_better=(False)) #因rmse越小越好故填false
+r_rmse = make_scorer(rmse_sco,greater_is_better=(False)) #a smaller RMSE is better, fill in "false
 gs_m = GridSearchCV(pipeline , cv_params, verbose=2
                    ,refit=True, n_jobs=1,scoring=r_rmse 
                   ,cv=5)
@@ -90,7 +84,7 @@ gs_p = gs_m.best_estimator_
 a =gs_m.best_params_
 Params=[]
 Params.append(a)
-# joblib.dump(gs_p, 'DeleteXGBA.model')  #儲存模型
+# joblib.dump(gs_p, 'DeleteXGBA.model') 
 tEnd_m = time.time()
 run = 1
 turn = 2
@@ -101,8 +95,8 @@ while run <= turn :
     train_X, test_X, train_y, test_y = train_test_split( X, yy,test_size=0.3)
     AEte_p = encoder.predict(test_X)
     p = gs_p.predict(AEte_p)
-    test_y = train_y_s.inverse_transform(test_y)  #反正規化
-    # p = np.array(p).reshape(-1,1) #因應改版需重新reshape
+    test_y = train_y_s.inverse_transform(test_y)  
+    # p = np.array(p).reshape(-1,1) #maybe need reshape
     p = train_y_s.inverse_transform(p)
     def inverse(a):
         pre = train_y_s.inverse_transform(a)
@@ -115,12 +109,10 @@ while run <= turn :
         mse = np.sum((o_r-p_r)**2)/(n)
         armse = np.sqrt(mse)
         return armse
-    
     def mape(o_r,p_r):
         n = len(o_r)
         ma = (sum(np.abs((o_r-p_r)/o_r)))/n*100
         return ma
-    
     dy_1 = test_y.iloc[:,0:1]
     dp_1 = p.iloc[:,0:1]
     dy_2= test_y.iloc[:,1:2]
@@ -165,14 +157,10 @@ while run <= turn :
     Am = (mape1+mape2+mape3+mape4+mape5+mape6)/6
     df_r = pd.DataFrame({'rmse1':[rmse1],'rmse2':[rmse2]
                          ,'rmse3':[rmse3],'rmse4':[rmse4],'rmse5':[rmse5],'rmse6':[rmse6]})
-    
     df_m = pd.DataFrame({'mape1':[mape1],'mape2':[mape2]
                          ,'mape3':[mape3],'mape4':[mape4],'mape5':[mape5],'mape6':[mape6]})
-    
-  
     AverageRmse.append(Av)
     AverageMape.append(Am)
-    
     run += 1
 averrmse = np.mean(AverageRmse)
 avermape = np.mean(AverageMape)
@@ -189,8 +177,4 @@ c = pd.DataFrame(AverageMape)
 o = pd.concat([b,c],axis = 1)
 col =['Rmse','Mape']
 o.columns = col
-o.to_csv('Second.csv',index = False)
-
-    
-    
-    
+o.to_csv('Predict_Result.csv',index = False)
